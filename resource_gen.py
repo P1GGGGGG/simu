@@ -145,6 +145,7 @@ def init():
 
     drones = []
 
+    # TODO(Dimo Zhang) : 在settings.json中加入相应的配置
     for i in range(num_drones):
         drone_name = drone_names[i]
         if drone_name in vehicles:
@@ -160,7 +161,7 @@ def init():
     threads = []
 
     # 为每架无人机创建一个线程
-    # TODO(Earl Zhu): 任务相关参数还需要调整以适应变化
+    # TODO(Earl Zhu) : 任务相关参数还需要调整以适应变化
     for i in range(len(drone_names)):
         thread = threading.Thread(target=fly_drone,
                                   args=(
