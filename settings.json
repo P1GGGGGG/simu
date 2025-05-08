@@ -1,0 +1,46 @@
+{
+  "SeeDocsAt": "https://github.com/Microsoft/AirSim/blob/main/docs/settings.md",
+  "SettingsVersion": 1.2,
+  "SimMode": "Multirotor",
+  "Vehicles": {
+    "Drone1": {
+      "VehicleType": "SimpleFlight",
+      "X": 0,
+      "Y": 0,
+      "Z": 0,
+      "Pitch": 0,
+      "Roll": 0,
+      "Yaw": 0,
+      "Model": "GenericQuadRotor",
+      "EnableCollisionPassthrough": false,
+      "CPU_FREQUENCY": 2000,
+      "MEMORY_USAGE": 10
+    },
+    "Drone2": {
+      "VehicleType": "SimpleFlight",
+      "X": 0,
+      "Y": -3,
+      "Z": 0,
+      "Pitch": 0,
+      "Roll": 0,
+      "Yaw": 0,
+      "Model": "GenericQuadRotor",
+      "EnableCollisionPassthrough": false,
+      "CPU_FREQUENCY": 2000,
+      "MEMORY_USAGE": 10
+    },
+    "Drone3": {
+      "VehicleType": "SimpleFlight",
+      "X": 0,
+      "Y": 3,
+      "Z": 0,
+      "Pitch": 0,
+      "Roll": 0,
+      "Yaw": 0,
+      "Model": "GenericQuadRotor",
+      "EnableCollisionPassthrough": false,
+      "CPU_FREQUENCY": 2000,
+      "MEMORY_USAGE": 10
+    }
+  }
+}

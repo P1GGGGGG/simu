@@ -8,6 +8,9 @@ import io
 import json
 import random
 
+# 全局变量声明
+global_drones = []
+
 
 # 创建目录的函数
 def create_directory(folder_name):
@@ -45,9 +48,9 @@ def capture_video(client, drone_name, folder_name, duration=10):
 
 
 class Drone:
-    def __init__(self, total_memory, current_memory_usage, cpu_frequency, x=0, y=0, z=-10, drone_name=""):
+    def __init__(self, total_memory, cpu_frequency, x=0, y=0, z=-10, drone_name=""):
         self.total_memory = total_memory  # 内存总量
-        self.current_memory_usage = current_memory_usage  # 当前内存使用量
+        self.current_memory_usage = 0.0  # 当前内存使用量
         self.cpu_frequency = cpu_frequency  # CPU频率
         self.memory_usage_rate = (self.current_memory_usage / self.total_memory) * 100
         self.cpu_usage_rate = 0.0
@@ -83,26 +86,23 @@ class Drone:
 
         # 计算CPU使用率
         cpu_load_per_second = (total_cpu_clock / self.cpu_frequency) * 100 / duration
+        self.cpu_usage_rate += cpu_load_per_second
         start_time = time.time()
 
-        print(
-            f"Task started. Memory Usage Rate: {self.get_memory_usage_rate():.2f}%, CPU Usage Rate: {self.get_cpu_usage_rate():.2f}%")
+        # print(f"Task started. Memory Usage Rate: {self.get_memory_usage_rate():.2f}%, CPU Usage Rate: {
+        # self.get_cpu_usage_rate():.2f}%")
 
-        while time.time() - start_time < duration:
+        while time.time() - start_time < duration - 1:
             # 模拟CPU计算工作负载
-            for _ in range(10 ** 6):  # 这里可以根据需要调整工作负载
-                pass
-
-            elapsed_time = time.time() - start_time
-            self.cpu_usage_rate = cpu_load_per_second * elapsed_time
+            pass
 
         # 释放内存和CPU
         self.current_memory_usage -= required_memory
         self.memory_usage_rate = (self.current_memory_usage / self.total_memory) * 100
-        self.cpu_usage_rate = 0.0
+        self.cpu_usage_rate -= cpu_load_per_second
 
-        print(
-            f"Task completed. Memory Usage Rate: {self.get_memory_usage_rate():.2f}%, CPU Usage Rate: {self.get_cpu_usage_rate():.2f}%")
+        # print(f"Task completed. Memory Usage Rate: {self.get_memory_usage_rate():.2f}%, CPU Usage Rate: {
+        # self.get_cpu_usage_rate():.2f}%")
 
     def start_task(self, required_memory, total_cpu_clock, duration):
         thread1 = threading.Thread(target=self.task_computing, args=(required_memory, total_cpu_clock, duration))
@@ -137,64 +137,44 @@ def fly_drone(drone, client, drone_name, folder_name, duration, required_memory,
 
 class DroneDataGenerator:
     def __init__(self):
+
         self.drones = []
         self.client = airsim.MultirotorClient()
-        self.initialize_drones()
-        
-    def initialize_drones(self):
-        with open('settings.json', 'r') as file:
-            settings = json.load(file)
-        vehicles = settings['Vehicles']
-        num_drones = 100
-        drone_names = [f'Drone{i + 1}' for i in range(num_drones)]
-        
-        for i in range(num_drones):
-            drone_name = drone_names[i]
-            if drone_name in vehicles:
-                x = vehicles[drone_name]['X']
-                y = vehicles[drone_name]['Y']
-                cpu_frequency = vehicles[drone_name]['CPU_FREQUENCY']
-                current_memory_usage = vehicles[drone_name]['MEMORY_USAGE']
-                total_memory = vehicles[drone_name]['MEMORY_USAGE']
-                drone = Drone(total_memory=total_memory, 
-                            current_memory_usage=current_memory_usage,
-                            cpu_frequency=cpu_frequency, 
-                            x=x, y=y, 
-                            drone_name=drone_name)
-                self.drones.append(drone)
-    
+        # 启动子线程运行init函数，并将self.drones传递给init以便获取信息
+        init_thread = threading.Thread(target=init)
+        init_thread.start()
+
     def get_drone_data(self):
         """获取所有无人机的实时数据"""
         drone_data = []
-        for drone in self.drones:
-            # 模拟一些随机变化
-            drone.x += random.uniform(-1, 1)
-            drone.y += random.uniform(-1, 1)
-            drone.cpu_usage_rate = random.uniform(0, 100)
-            drone.memory_usage_rate = random.uniform(0, 100)
-            
+        # 使用全局变量global_drones获取无人机信息
+        global global_drones
+        for drone in global_drones:
             drone_data.append({
                 "droneId": drone.drone_name,
-                "battery": random.uniform(0, 100),  # 模拟电池电量
+                "battery": 100,  # 模拟电池电量
                 "cpu": round(drone.cpu_usage_rate, 1),
-                "memory": round(drone.memory_usage_rate, 1),
+                "memory": round((drone.current_memory_usage / drone.total_memory) * 100, 1),
                 "ux": round(drone.x, 2),
                 "uy": round(drone.y, 2),
-                "status": random.choice(['idle', 'running', 'error'])
+                # "status": random.choice(['idle', 'running', 'error'])
+                "status": "idle"
             })
         return drone_data
 
 
 def init():
+    global global_drones
     with open('settings.json', 'r') as file:
         settings = json.load(file)
     vehicles = settings['Vehicles']
-    num_drones = 100
+    num_drones = 3
     drone_names = [f'Drone{i + 1}' for i in range(num_drones)]
     folder_names = [f'Drone{i + 1}_Folder' for i in range(num_drones)]
     duration = 10  # 视频捕获时长
 
-    drones = []
+    # 使用全局变量
+    global_drones.clear()  # 清空现有列表
 
     # TODO(Dimo Zhang) : 在settings.json中加入相应的配置
     for i in range(num_drones):
@@ -203,11 +183,9 @@ def init():
             x = vehicles[drone_name]['X']
             y = vehicles[drone_name]['Y']
             cpu_frequency = vehicles[drone_name]['CPU_FREQUENCY']
-            current_memory_usage = vehicles[drone_name]['MEMORY_USAGE']
             total_memory = vehicles[drone_name]['MEMORY_USAGE']
-            drone = Drone(total_memory=total_memory, current_memory_usage=current_memory_usage,
-                          cpu_frequency=cpu_frequency, x=x, y=y, drone_name=drone_name)
-            drones.append(drone)
+            drone = Drone(total_memory=total_memory, cpu_frequency=cpu_frequency, x=x, y=y, drone_name=drone_name)
+            global_drones.append(drone)
 
     threads = []
 
@@ -216,7 +194,8 @@ def init():
     for i in range(len(drone_names)):
         thread = threading.Thread(target=fly_drone,
                                   args=(
-                                      drones[i], airsim.MultirotorClient(), drone_names[i], folder_names[i], duration,
+                                      global_drones[i], airsim.MultirotorClient(), drone_names[i], folder_names[i],
+                                      duration,
                                       100,
                                       2500))
         threads.append(thread)
